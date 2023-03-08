@@ -6,8 +6,8 @@ import asyncHandler from "express-async-handler";
 import { sendEmail } from "../services/nodeMailer.js";
 
 const instance = new Razorpay({
-  key_id: "rzp_test_I54yg0JC93Hxui",
-  key_secret: "C60QTzFIVifgEsMgUG9fsrwH",
+	key_id: process.env.KEY_ID,
+	key_secret: process.env.KEY_SECRET
 });
 
 export const initiatePayment = asyncHandler(async (req, res) => {

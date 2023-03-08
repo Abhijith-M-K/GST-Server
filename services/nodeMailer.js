@@ -8,14 +8,14 @@ import asyncHandler from "express-async-handler";
 const tranporter = nodeMailer.createTransport({
   service: "gmail",
   auth: {
-    user: "abhijithmk638@gmail.com",
-    pass: "injfwnaahmklxmlb",
+	user: process.env.FROM_EMAIL,
+	pass: process.env.FROM_PASSWORD
   },
 });
 
 export const sendEmail = asyncHandler(async (email, message) => {
   const info = await tranporter.sendMail({
-    from: "abhijithmk638@gmail.com",
+	from: process.env.FROM_EMAIL,
     to: email,
     subject: "GST Payment status",
     text: message,

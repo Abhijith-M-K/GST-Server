@@ -1,0 +1,93 @@
+import User from "../models/userModel.js";
+import Razorpay from "razorpay";
+import asyncHandler from "express-async-handler";
+// import dotenv from "dotenv";
+// dotenv.config();
+import { sendEmail } from "../services/nodeMailer.js";
+
+const instance = new Razorpay({
+  key_id: "rzp_test_I54yg0JC93Hxui",
+  key_secret: "C60QTzFIVifgEsMgUG9fsrwH",
+});
+
+export const initiatePayment = asyncHandler(async (req, res) => {
+  console.log(process.env.KEY_ID, "ooooooooooooo");
+  const { companyName, phone, email, aadhaar, pan, option } = req.body;
+
+  if (!companyName || !phone || !email || !aadhaar || !pan || !option) {
+    res.status(400);
+    throw new Error("Add all fields");
+  }
+  const amount = option.price;
+
+  // ORDER CREATION
+  const options = {
+    amount: amount * 100, // amount in the smallest currency unit
+    currency: "INR",
+    receipt: "order_rcptid_11",
+  };
+  instance.orders.create(options, function (err, order) {
+    res.status(201).json(order);
+  });
+});
+
+export const confirmPayment = asyncHandler(async (req, res) => {
+  const [paymentDetails, userData] = req.body;
+  
+
+  if (paymentDetails.error) {
+    const message = paymentDetails.error.description;
+    const user = new User({
+      companyName: userData.companyName,
+      service: userData.option.name,
+      phone: userData.phone,
+      email: userData.email,
+      aadhaar: userData.aadhaar,
+      pan: userData.pan,
+      amount: userData.option.price,
+      paymentId: paymentDetails.error.metadata.payment_id,
+      paymentStatus: "failed",
+    });
+	const emailSuccess =await user.save()
+
+    sendEmail(userData.email, message);
+
+    // const success = await user.save();
+    if (emailSuccess) {
+      res.status(201).json({ message: "Payment failed" });
+    } else {
+      res.status(400);
+      throw new Error("Invalid user data");
+    }
+  } else {
+    const message = `Your payment request for ${userData.option.name} of amount Rs.${userData.option.price} is successfull.`;
+    const user = new User({
+      companyName: userData.companyName,
+      service: userData.option.name,
+      phone: userData.phone,
+      email: userData.email,
+      aadhaar: userData.aadhaar,
+      pan: userData.pan,
+      amount: userData.option.price,
+      paymentId: paymentDetails.razorpay_payment_id,
+      paymentStatus: "success",
+    });
+	// console.log(user)
+
+    sendEmail(userData.email, message);
+
+    const success = await user.save();
+	console.log(success,"how are you")
+    if (success) {
+		console.log("Hiiiiiiiii")
+      res.status(201).json({ message: "Payment successfull" });
+    } else {
+		console.log("helllllllllllllll")
+      res.status(400);
+      throw new Error("Invalid user data");
+	 
+
+    }
+	
+  }
+});
